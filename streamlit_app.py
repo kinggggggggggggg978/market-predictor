@@ -317,81 +317,83 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             name="Price",
             increasing_line_color='#00cc96',
             decreasing_line_color='#ef553b',
-            increasing_fillcolor='rgba(0, 204, 150, 0.7)',  # More opaque green fill
-            decreasing_fillcolor='rgba(239, 85, 59, 0.7)',  # More opaque red fill
-            line=dict(width=2),  # Thicker border lines for better visibility
-            whiskerwidth=1.0,    # Full width whiskers
-            opacity=1.0,         # Full opacity for maximum visibility
+            increasing_fillcolor='rgba(0, 204, 150, 0.9)',  # More opaque green fill
+            decreasing_fillcolor='rgba(239, 85, 59, 0.9)',  # More opaque red fill
+            line=dict(width=2),  # Thicker border lines
+            whiskerwidth=0.8,    # Slightly thinner whiskers for better spacing
+            opacity=1.0,         # Full opacity
         )
     )
     
-    # Add volume bars
-    fig.add_trace(
-        go.Bar(
-            x=data.index,
-            y=data['Volume'],
-            name="Volume",
-            opacity=0.3,
-            marker={
-                'color': 'rgba(110, 68, 255, 0.5)'
-            },
-            yaxis="y2"
+    # Only add volume as a secondary trace if user wants indicators
+    if 'show_indicators' in st.session_state and st.session_state.show_indicators:
+        # Add volume bars
+        fig.add_trace(
+            go.Bar(
+                x=data.index,
+                y=data['Volume'],
+                name="Volume",
+                opacity=0.3,
+                marker={
+                    'color': 'rgba(110, 68, 255, 0.5)'
+                },
+                yaxis="y2"
+            )
         )
-    )
-    
-    # Calculate and add moving averages
-    data['MA20'] = data['Close'].rolling(window=20).mean()
-    data['MA50'] = data['Close'].rolling(window=50).mean()
-    
-    # Add technical indicators with reduced opacity to make candles stand out
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data['MA20'],
-            name="20-Day MA",
-            line=dict(color='rgba(255, 255, 255, 0.6)', width=1, dash='dot'),
-            opacity=0.8
+        
+        # Calculate and add moving averages
+        data['MA20'] = data['Close'].rolling(window=20).mean()
+        data['MA50'] = data['Close'].rolling(window=50).mean()
+        
+        # Add technical indicators
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data['MA20'],
+                name="20-Day MA",
+                line=dict(color='rgba(255, 255, 255, 0.6)', width=1, dash='dot'),
+                opacity=0.8
+            )
         )
-    )
-    
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data['MA50'],
-            name="50-Day MA",
-            line=dict(color='rgba(255, 255, 0, 0.6)', width=1, dash='dot'),
-            opacity=0.8
+        
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data['MA50'],
+                name="50-Day MA",
+                line=dict(color='rgba(255, 255, 0, 0.6)', width=1, dash='dot'),
+                opacity=0.8
+            )
         )
-    )
-    
-    # Add Bollinger Bands (20-day, 2 standard deviations)
-    data['MA20_std'] = data['Close'].rolling(window=20).std()
-    data['BB_upper'] = data['MA20'] + 2 * data['MA20_std']
-    data['BB_lower'] = data['MA20'] - 2 * data['MA20_std']
-    
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data['BB_upper'],
-            name="BB Upper",
-            line=dict(color='rgba(173, 216, 230, 0.5)', width=1, dash='dot'),
-            showlegend=True,
-            opacity=0.7
+        
+        # Add Bollinger Bands (20-day, 2 standard deviations)
+        data['MA20_std'] = data['Close'].rolling(window=20).std()
+        data['BB_upper'] = data['MA20'] + 2 * data['MA20_std']
+        data['BB_lower'] = data['MA20'] - 2 * data['MA20_std']
+        
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data['BB_upper'],
+                name="BB Upper",
+                line=dict(color='rgba(173, 216, 230, 0.5)', width=1, dash='dot'),
+                showlegend=True,
+                opacity=0.7
+            )
         )
-    )
-    
-    fig.add_trace(
-        go.Scatter(
-            x=data.index,
-            y=data['BB_lower'],
-            name="BB Lower",
-            line=dict(color='rgba(173, 216, 230, 0.5)', width=1, dash='dot'),
-            fill='tonexty',
-            fillcolor='rgba(173, 216, 230, 0.1)',
-            showlegend=True,
-            opacity=0.7
+        
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data['BB_lower'],
+                name="BB Lower",
+                line=dict(color='rgba(173, 216, 230, 0.5)', width=1, dash='dot'),
+                fill='tonexty',
+                fillcolor='rgba(173, 216, 230, 0.1)',
+                showlegend=True,
+                opacity=0.7
+            )
         )
-    )
     
     # Add prediction lines if available
     if prediction_data is not None:
@@ -413,133 +415,90 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             # If it's a date object (not datetime), convert to datetime first
             pred_date_ts = datetime.combine(pred_date, datetime.min.time())
         
-        # Find a visible part of the chart to place annotations
-        # Use the last 20% of the visible data for annotation placement
-        chart_dates = data.index.tolist()
-        if len(chart_dates) > 0:
-            annotation_date = chart_dates[int(len(chart_dates) * 0.8)]
-            
-            # Add high prediction line
-            fig.add_hline(
-                y=high_price, 
-                line_dash="dash", 
-                line_width=2,
-                line_color="#00cc96",
-                annotation_text=f"Predicted High: {high_price_formatted}",
-                annotation_position="right"
-            )
-            
-            # Add low prediction line
-            fig.add_hline(
-                y=low_price, 
-                line_dash="dash", 
-                line_width=2,
-                line_color="#ef553b",
-                annotation_text=f"Predicted Low: {low_price_formatted}",
-                annotation_position="right"
-            )
-            
-            # Get scalar values for min and max to avoid pandas Series comparison issues
-            min_low = float(data['Low'].min())
-            max_high = float(data['High'].max())
-            
-            # Ensure we have the absolute min and max for the y-axis range of our vertical line
-            min_y = min(min_low, low_price) * 0.98
-            max_y = max(max_high, high_price) * 1.02
-            
-            # Instead of using vline (which is causing the error), add a shape for the prediction date
-            fig.add_shape(
-                type="line",
-                x0=pred_date_ts,
-                y0=min_y,
-                x1=pred_date_ts,
-                y1=max_y,
-                line=dict(color="#6e44ff", width=2, dash="dash"),
-            )
-            
-            # Add an annotation for the prediction date
-            fig.add_annotation(
-                x=pred_date_ts,
-                y=max_y,
-                text=f"Prediction: {pred_date_ts.strftime('%Y-%m-%d')}",
-                showarrow=False,
-                font=dict(color="#6e44ff", size=12),
-                yanchor="bottom"
-            )
+        # Add high prediction line
+        fig.add_hline(
+            y=high_price, 
+            line_dash="dash", 
+            line_width=1.5,
+            line_color="#00cc96",
+            annotation_text=f"Predicted High: {high_price_formatted}",
+            annotation_position="right"
+        )
+        
+        # Add low prediction line
+        fig.add_hline(
+            y=low_price, 
+            line_dash="dash", 
+            line_width=1.5,
+            line_color="#ef553b",
+            annotation_text=f"Predicted Low: {low_price_formatted}",
+            annotation_position="right"
+        )
+        
+        # Get scalar values for min and max to avoid pandas Series comparison issues
+        min_low = float(data['Low'].min())
+        max_high = float(data['High'].max())
+        
+        # Ensure we have the absolute min and max for the y-axis range of our vertical line
+        min_y = min(min_low, low_price) * 0.98
+        max_y = max(max_high, high_price) * 1.02
+        
+        # Add shape for the prediction date - semi-transparent blue vertical line
+        fig.add_shape(
+            type="rect",
+            x0=pred_date_ts,
+            y0=min_y,
+            x1=pred_date_ts + timedelta(days=1),  # Make it cover the full day
+            y1=max_y,
+            line=dict(color="#6e44ff", width=0),
+            fillcolor="rgba(110, 68, 255, 0.1)",  # Very light purple fill
+        )
+        
+        # Add a vertical line for the prediction date
+        fig.add_shape(
+            type="line",
+            x0=pred_date_ts,
+            y0=min_y,
+            x1=pred_date_ts,
+            y1=max_y,
+            line=dict(color="#6e44ff", width=1.5, dash="dash"),
+        )
+        
+        # Add an annotation for the prediction date at the top
+        fig.add_annotation(
+            x=pred_date_ts,
+            y=max_y,
+            text=f"Prediction: {pred_date_ts.strftime('%Y-%m-%d')}",
+            showarrow=False,
+            font=dict(color="#6e44ff", size=12),
+            yanchor="bottom"
+        )
     
-    # Create safe time range buttons that check data length
-    data_length = len(data.index)
-    time_buttons = []
+    # Create title for the chart based on ticker and interval
+    chart_title = f"Price Prediction for {pred_date.strftime('%Y-%m-%d')}" if prediction_data is not None else f"{ticker} Chart ({interval})"
     
-    # Only add buttons if we have enough data points
-    # 1 Month (30 days) button
-    if data_length >= 30:
-        time_buttons.append(dict(
-            label="1M",
-            method="relayout",
-            args=[{"xaxis.range": [data.index[max(-30, -data_length)], data.index[-1]]}]
-        ))
+    # Determine initial view range - show approximately 2 months of daily candles by default
+    default_days = 45  # Show roughly 2 months (excluding weekends)
+    start_idx = max(-default_days, -len(data))
+    default_start_date = data.index[start_idx]
+    default_end_date = data.index[-1]
     
-    # 3 Months (90 days) button
-    if data_length >= 90:
-        time_buttons.append(dict(
-            label="3M",
-            method="relayout",
-            args=[{"xaxis.range": [data.index[max(-90, -data_length)], data.index[-1]]}]
-        ))
+    # If prediction date is available, ensure it's included in view
+    if prediction_data is not None and isinstance(pred_date_ts, datetime):
+        # Ensure prediction date is visible by adjusting the default range if needed
+        if pred_date_ts > default_end_date:
+            default_end_date = pred_date_ts + timedelta(days=5)  # Add some buffer after prediction
     
-    # 6 Months (180 days) button
-    if data_length >= 180:
-        time_buttons.append(dict(
-            label="6M",
-            method="relayout",
-            args=[{"xaxis.range": [data.index[max(-180, -data_length)], data.index[-1]]}]
-        ))
-    
-    # 1 Year (365 days) button
-    if data_length >= 365:
-        time_buttons.append(dict(
-            label="1Y",
-            method="relayout",
-            args=[{"xaxis.range": [data.index[max(-365, -data_length)], data.index[-1]]}]
-        ))
-    
-    # Always add the "All" button
-    time_buttons.append(dict(
-        label="All",
-        method="relayout",
-        args=[{"xaxis.range": [data.index[0], data.index[-1]]}]
-    ))
-    
-    # Update layout with improved settings for candle visibility
-    updatemenus = []
-    
-    # Only add the time range menu if we have buttons
-    if time_buttons:
-        updatemenus.append(dict(
-            type="buttons",
-            direction="right",
-            buttons=time_buttons,
-            pad={"r": 10, "t": 10},
-            showactive=True,
-            x=0.05,
-            xanchor="left",
-            y=1.15,
-            yanchor="top",
-            bgcolor="rgba(110, 68, 255, 0.2)",
-            bordercolor="#6e44ff",
-            font=dict(color="#ffffff")
-        ))
-    
+    # Set main layout settings
     fig.update_layout(
-        title=f"{ticker} Chart ({interval})",
+        title=chart_title,
         xaxis_title="Date",
         yaxis_title="Price",
         template="plotly_dark",
         plot_bgcolor='rgba(19, 23, 34, 0.0)',
         paper_bgcolor='rgba(0, 0, 0, 0)',
-        height=800,  # Reduced height from TradingView's 1200px
-        xaxis_rangeslider_visible=True,
+        height=600,  # Reduced height for better proportions
+        margin=dict(l=40, r=40, t=60, b=40),
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -550,55 +509,56 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             bordercolor="#6e44ff",
             borderwidth=1
         ),
-        yaxis=dict(
-            domain=[0.2, 1.0],
-            gridcolor='rgba(255, 255, 255, 0.1)',  # Subtle grid lines
-            showgrid=True,
-            zeroline=False  # Remove zero line for cleaner look
-        ),
-        yaxis2=dict(
-            domain=[0, 0.15],
-            title="Volume",
-            gridcolor='rgba(255, 255, 255, 0.1)',  # Matching grid lines
-            showgrid=True
-        ),
-        margin=dict(l=40, r=40, t=40, b=40),
-        updatemenus=updatemenus
     )
     
-    # Improve candlestick appearance
-    fig.update_xaxes(
-        rangeslider_thickness=0.05,
-        gridcolor='rgba(255, 255, 255, 0.1)',   # Subtle grid lines
-        showgrid=True,                          # Ensure grid is visible
-        rangeslider_bgcolor='rgba(19, 23, 34, 0.3)',  # Semi-transparent rangeslider
-        # Show only a reasonable number of tick labels
-        nticks=10,
-        # Ensure candles don't appear too thin
-        rangebreaks=[
-            dict(bounds=["sat", "mon"]) # Hide weekends for better weekday candle display
-        ] if interval == "Daily" else None
-    )
-    
-    # Add chart subtitle with instructions (only if we have time buttons)
-    if time_buttons:
-        fig.add_annotation(
-            text="Use the buttons above or the range slider below to adjust the view. Drag to zoom or double-click to reset.",
-            xref="paper", yref="paper",
-            x=0, y=1.13,
-            showarrow=False,
-            font=dict(size=11, color="rgba(255,255,255,0.6)"),
-            align="left"
+    # Add volume subplot only if showing indicators
+    if 'show_indicators' in st.session_state and st.session_state.show_indicators:
+        fig.update_layout(
+            yaxis=dict(
+                domain=[0.2, 1.0],
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                showgrid=True,
+                zeroline=False
+            ),
+            yaxis2=dict(
+                domain=[0, 0.15],
+                title="Volume",
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                showgrid=True
+            ),
+            xaxis_rangeslider_visible=True,
+            xaxis_rangeslider_thickness=0.05,
         )
     else:
-        fig.add_annotation(
-            text="Use the range slider below to adjust the view. Drag to zoom or double-click to reset.",
-            xref="paper", yref="paper",
-            x=0, y=1.13,
-            showarrow=False,
-            font=dict(size=11, color="rgba(255,255,255,0.6)"),
-            align="left"
+        # Without volume, maximize candle display area and hide rangeslider
+        fig.update_layout(
+            yaxis=dict(
+                domain=[0, 1.0],
+                gridcolor='rgba(255, 255, 255, 0.1)',
+                showgrid=True,
+                zeroline=False
+            ),
+            xaxis_rangeslider_visible=False,  # Hide the rangeslider for cleaner look
         )
+    
+    # Set the default x-axis range to show ~2 months of data
+    fig.update_xaxes(
+        range=[default_start_date, default_end_date],
+        gridcolor='rgba(255, 255, 255, 0.1)',
+        showgrid=True,
+        # Remove weekend gaps for better candle spacing
+        rangebreaks=[
+            dict(bounds=["sat", "mon"]) # Hide weekends
+        ] if interval == "Daily" else None,
+        # Add nice month/day labels
+        tickformat="%b %d",
+    )
+    
+    # Update y-axis format based on asset type
+    if is_forex:
+        fig.update_yaxes(tickformat=".5f")
+    else:
+        fig.update_yaxes(tickformat=".2f")
     
     return fig
 
@@ -1099,16 +1059,28 @@ if st.session_state.data_loaded:
         # Create a Plotly chart with the predictions instead of TradingView
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
 
-        # Add controls to display technical indicators or focus on candles
-        show_indicators = st.checkbox("Show Technical Indicators", value=True)
-        candle_focus = st.checkbox("Focus on Candles (hide indicators)", value=False)
+        # Simpler options for chart display
+        candle_focus = st.checkbox("Focus on Candles (hide indicators)", value=True)  # Default to candle focus
+        st.session_state.show_indicators = not candle_focus
 
-        # If user wants to focus on candles, update session state
-        if candle_focus:
-            st.session_state.show_indicators = False
-        elif show_indicators:
-            st.session_state.show_indicators = True
+        # Add time range selector
+        time_range = st.select_slider(
+            "Select Time Range",
+            options=["1 Month", "2 Months", "3 Months", "6 Months", "1 Year", "All Data"],
+            value="2 Months"
+        )
 
+        # Convert selected range to days for later use
+        range_to_days = {
+            "1 Month": 30,
+            "2 Months": 60,
+            "3 Months": 90,
+            "6 Months": 180,
+            "1 Year": 365,
+            "All Data": 9999  # Very large number to show all data
+        }
+
+        # Create market chart with predictions
         market_chart = create_market_chart(
             st.session_state.selected_ticker, 
             st.session_state.selected_interval,
@@ -1116,12 +1088,26 @@ if st.session_state.data_loaded:
             st.session_state.data
         )
 
-        # If user prefers to focus on just candles, update the figure to hide indicators
-        if candle_focus:
-            # Hide all traces except candles and prediction lines
-            for i in range(len(market_chart.data)):
-                if market_chart.data[i].type != 'candlestick' and 'prediction' not in market_chart.data[i].name.lower():
-                    market_chart.data[i].visible = 'legendonly'
+        # Apply the selected time range
+        if time_range != "All Data" and 'data' in st.session_state and st.session_state.data is not None:
+            days = range_to_days[time_range]
+            data = st.session_state.data
+            
+            if len(data) > days:
+                start_idx = max(-days, -len(data))
+                start_date = data.index[start_idx]
+                end_date = data.index[-1]
+                
+                # If prediction date exists and is beyond our end date, extend view
+                if 'predictions' in st.session_state and st.session_state.predictions:
+                    pred_date = st.session_state.predictions['date']
+                    if isinstance(pred_date, datetime.date):
+                        pred_date = datetime.combine(pred_date, datetime.min.time())
+                        
+                    if pred_date > end_date:
+                        end_date = pred_date + timedelta(days=5)
+                        
+                market_chart.update_xaxes(range=[start_date, end_date])
 
         st.plotly_chart(market_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -1233,12 +1219,22 @@ if st.button("Open Backtesting"):
             st.markdown('<div class="chart-container">', unsafe_allow_html=True)
 
             # Add controls for backtesting chart view
-            candle_focus_backtest = st.checkbox("Focus on Candles (hide indicators)", value=False, key="candle_focus_backtest")
+            candle_focus_backtest = st.checkbox("Focus on Candles", value=True, key="candle_focus_backtest")
+
+            # Apply same time range as main chart
+            backtest_time_range = st.select_slider(
+                "Select Time Range",
+                options=["1 Month", "2 Months", "3 Months", "6 Months", "1 Year", "All Data"],
+                value="2 Months",
+                key="backtest_time_range"
+            )
+
+            backtest_data = load_market_data(backtest_ticker, "1 Year", backtest_interval)
 
             market_chart = create_market_chart(
                 backtest_ticker,
                 backtest_interval,
-                data=load_market_data(backtest_ticker, "1 Year", backtest_interval)
+                data=backtest_data
             )
 
             # If user prefers to focus on just candles, update the figure
@@ -1247,6 +1243,17 @@ if st.button("Open Backtesting"):
                 for i in range(len(market_chart.data)):
                     if market_chart.data[i].type != 'candlestick':
                         market_chart.data[i].visible = 'legendonly'
+
+            # Apply the selected time range
+            if backtest_time_range != "All Data" and backtest_data is not None:
+                days = range_to_days[backtest_time_range]
+                
+                if len(backtest_data) > days:
+                    start_idx = max(-days, -len(backtest_data))
+                    start_date = backtest_data.index[start_idx]
+                    end_date = backtest_data.index[-1]
+                    
+                    market_chart.update_xaxes(range=[start_date, end_date])
 
             st.plotly_chart(market_chart, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
