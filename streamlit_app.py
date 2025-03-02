@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import random
 import hashlib
-import time  # Added the missing time import
 
 # Set fixed seeds for all random processes
 RANDOM_SEED = 42
