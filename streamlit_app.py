@@ -429,20 +429,28 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
                 annotation_position="right"
             )
             
+            # Get scalar values for min and max to avoid pandas Series comparison issues
+            min_low = float(data['Low'].min())
+            max_high = float(data['High'].max())
+            
+            # Ensure we have the absolute min and max for the y-axis range of our vertical line
+            min_y = min(min_low, low_price) * 0.98
+            max_y = max(max_high, high_price) * 1.02
+            
             # Instead of using vline (which is causing the error), add a shape for the prediction date
             fig.add_shape(
                 type="line",
                 x0=pred_date_ts,
-                y0=min(data['Low'].min(), low_price) * 0.98,
+                y0=min_y,
                 x1=pred_date_ts,
-                y1=max(data['High'].max(), high_price) * 1.02,
+                y1=max_y,
                 line=dict(color="#6e44ff", width=2, dash="dash"),
             )
             
             # Add an annotation for the prediction date
             fig.add_annotation(
                 x=pred_date_ts,
-                y=max(data['High'].max(), high_price) * 1.02,
+                y=max_y,
                 text=f"Prediction: {pred_date_ts.strftime('%Y-%m-%d')}",
                 showarrow=False,
                 font=dict(color="#6e44ff", size=12),
