@@ -306,7 +306,7 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
     # Create the figure
     fig = go.Figure()
     
-    # Add candlestick chart
+    # Add candlestick chart with enhanced visibility
     fig.add_trace(
         go.Candlestick(
             x=data.index,
@@ -317,11 +317,11 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             name="Price",
             increasing_line_color='#00cc96',
             decreasing_line_color='#ef553b',
-            increasing_fillcolor='rgba(0, 204, 150, 0.5)',  # Semi-transparent green fill
-            decreasing_fillcolor='rgba(239, 85, 59, 0.5)',  # Semi-transparent red fill
-            line=dict(width=1),  # Thinner lines for cleaner look
-            whiskerwidth=0.8,    # Slightly thinner whiskers
-            opacity=0.95         # Slight transparency for better overlay with indicators
+            increasing_fillcolor='rgba(0, 204, 150, 0.7)',  # More opaque green fill
+            decreasing_fillcolor='rgba(239, 85, 59, 0.7)',  # More opaque red fill
+            line=dict(width=2),  # Thicker border lines for better visibility
+            whiskerwidth=1.0,    # Full width whiskers
+            opacity=1.0,         # Full opacity for maximum visibility
         )
     )
     
@@ -343,12 +343,14 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
     data['MA20'] = data['Close'].rolling(window=20).mean()
     data['MA50'] = data['Close'].rolling(window=50).mean()
     
+    # Add technical indicators with reduced opacity to make candles stand out
     fig.add_trace(
         go.Scatter(
             x=data.index,
             y=data['MA20'],
             name="20-Day MA",
-            line=dict(color='rgba(255, 255, 255, 0.7)', width=1)
+            line=dict(color='rgba(255, 255, 255, 0.6)', width=1, dash='dot'),
+            opacity=0.8
         )
     )
     
@@ -357,7 +359,8 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             x=data.index,
             y=data['MA50'],
             name="50-Day MA",
-            line=dict(color='rgba(255, 255, 0, 0.7)', width=1)
+            line=dict(color='rgba(255, 255, 0, 0.6)', width=1, dash='dot'),
+            opacity=0.8
         )
     )
     
@@ -371,8 +374,9 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             x=data.index,
             y=data['BB_upper'],
             name="BB Upper",
-            line=dict(color='rgba(173, 216, 230, 0.7)', width=1),
-            showlegend=True
+            line=dict(color='rgba(173, 216, 230, 0.5)', width=1, dash='dot'),
+            showlegend=True,
+            opacity=0.7
         )
     )
     
@@ -381,10 +385,11 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             x=data.index,
             y=data['BB_lower'],
             name="BB Lower",
-            line=dict(color='rgba(173, 216, 230, 0.7)', width=1),
+            line=dict(color='rgba(173, 216, 230, 0.5)', width=1, dash='dot'),
             fill='tonexty',
             fillcolor='rgba(173, 216, 230, 0.1)',
-            showlegend=True
+            showlegend=True,
+            opacity=0.7
         )
     )
     
@@ -462,7 +467,7 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
                 yanchor="bottom"
             )
         
-    # Update layout
+    # Update layout with improved settings for candle visibility
     fig.update_layout(
         title=f"{ticker} Chart ({interval})",
         xaxis_title="Date",
@@ -477,18 +482,67 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             yanchor="bottom",
             y=1.02,
             xanchor="right",
-            x=1
+            x=1,
+            bgcolor="rgba(19, 23, 34, 0.5)",
+            bordercolor="#6e44ff",
+            borderwidth=1
         ),
         yaxis=dict(
             domain=[0.2, 1.0],
-            gridcolor='rgba(255, 255, 255, 0.1)'  # Subtle grid lines
+            gridcolor='rgba(255, 255, 255, 0.1)',  # Subtle grid lines
+            showgrid=True,
+            zeroline=False  # Remove zero line for cleaner look
         ),
         yaxis2=dict(
             domain=[0, 0.15],
             title="Volume",
-            gridcolor='rgba(255, 255, 255, 0.1)'  # Matching grid lines
+            gridcolor='rgba(255, 255, 255, 0.1)',  # Matching grid lines
+            showgrid=True
         ),
-        margin=dict(l=40, r=40, t=40, b=40)
+        margin=dict(l=40, r=40, t=40, b=40),
+        # Add buttons for common time ranges to better view candles
+        updatemenus=[
+            dict(
+                type="buttons",
+                direction="right",
+                buttons=[
+                    dict(
+                        label="1M",
+                        method="relayout",
+                        args=[{"xaxis.range": [data.index[-30], data.index[-1]]}]
+                    ),
+                    dict(
+                        label="3M",
+                        method="relayout",
+                        args=[{"xaxis.range": [data.index[-90], data.index[-1]]}]
+                    ),
+                    dict(
+                        label="6M",
+                        method="relayout",
+                        args=[{"xaxis.range": [data.index[-180], data.index[-1]]}]
+                    ),
+                    dict(
+                        label="1Y",
+                        method="relayout",
+                        args=[{"xaxis.range": [data.index[-365], data.index[-1]]}]
+                    ),
+                    dict(
+                        label="All",
+                        method="relayout",
+                        args=[{"xaxis.range": [data.index[0], data.index[-1]]}]
+                    ),
+                ],
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.05,
+                xanchor="left",
+                y=1.15,
+                yanchor="top",
+                bgcolor="rgba(110, 68, 255, 0.2)",
+                bordercolor="#6e44ff",
+                font=dict(color="#ffffff")
+            )
+        ]
     )
     
     # Improve candlestick appearance
@@ -496,7 +550,23 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
         rangeslider_thickness=0.05,
         gridcolor='rgba(255, 255, 255, 0.1)',   # Subtle grid lines
         showgrid=True,                          # Ensure grid is visible
-        rangeslider_bgcolor='rgba(19, 23, 34, 0.3)'  # Semi-transparent rangeslider
+        rangeslider_bgcolor='rgba(19, 23, 34, 0.3)',  # Semi-transparent rangeslider
+        # Show only a reasonable number of tick labels
+        nticks=10,
+        # Ensure candles don't appear too thin
+        rangebreaks=[
+            dict(bounds=["sat", "mon"]) # Hide weekends for better weekday candle display
+        ] if interval == "Daily" else None
+    )
+    
+    # Add chart subtitle with instructions
+    fig.add_annotation(
+        text="Use the buttons above or the range slider below to adjust the view. Drag to zoom or double-click to reset.",
+        xref="paper", yref="paper",
+        x=0, y=1.13,
+        showarrow=False,
+        font=dict(size=11, color="rgba(255,255,255,0.6)"),
+        align="left"
     )
     
     return fig
@@ -997,12 +1067,31 @@ if st.session_state.data_loaded:
         
         # Create a Plotly chart with the predictions instead of TradingView
         st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+
+        # Add controls to display technical indicators or focus on candles
+        show_indicators = st.checkbox("Show Technical Indicators", value=True)
+        candle_focus = st.checkbox("Focus on Candles (hide indicators)", value=False)
+
+        # If user wants to focus on candles, update session state
+        if candle_focus:
+            st.session_state.show_indicators = False
+        elif show_indicators:
+            st.session_state.show_indicators = True
+
         market_chart = create_market_chart(
             st.session_state.selected_ticker, 
             st.session_state.selected_interval,
             pred,
             st.session_state.data
         )
+
+        # If user prefers to focus on just candles, update the figure to hide indicators
+        if candle_focus:
+            # Hide all traces except candles and prediction lines
+            for i in range(len(market_chart.data)):
+                if market_chart.data[i].type != 'candlestick' and 'prediction' not in market_chart.data[i].name.lower():
+                    market_chart.data[i].visible = 'legendonly'
+
         st.plotly_chart(market_chart, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1111,12 +1200,23 @@ if st.button("Open Backtesting"):
             
             # Create a Plotly chart
             st.markdown('<div class="chart-container">', unsafe_allow_html=True)
-            backtest_data = load_market_data(backtest_ticker, "1 Year", backtest_interval)
+
+            # Add controls for backtesting chart view
+            candle_focus_backtest = st.checkbox("Focus on Candles (hide indicators)", value=False, key="candle_focus_backtest")
+
             market_chart = create_market_chart(
                 backtest_ticker,
                 backtest_interval,
-                data=backtest_data
+                data=load_market_data(backtest_ticker, "1 Year", backtest_interval)
             )
+
+            # If user prefers to focus on just candles, update the figure
+            if candle_focus_backtest:
+                # Hide all traces except candles
+                for i in range(len(market_chart.data)):
+                    if market_chart.data[i].type != 'candlestick':
+                        market_chart.data[i].visible = 'legendonly'
+
             st.plotly_chart(market_chart, use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
                 
