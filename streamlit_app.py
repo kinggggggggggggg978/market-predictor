@@ -188,6 +188,71 @@ st.markdown("""
     .level-low .level-value {
         color: #ef553b;
     }
+    .key-levels-container {
+        background: rgba(43, 50, 82, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 2px solid #6e44ff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    .key-levels-header {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #9e86d9;
+        margin-bottom: 15px;
+        text-align: center;
+        border-bottom: 1px solid #6e44ff;
+        padding-bottom: 10px;
+    }
+    .key-level-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .key-level-box {
+        flex: 1;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin: 0 10px;
+    }
+    .hod-box {
+        background: rgba(0, 204, 150, 0.15);
+        border: 2px solid #00cc96;
+    }
+    .lod-box {
+        background: rgba(239, 85, 59, 0.15);
+        border: 2px solid #ef553b;
+    }
+    .current-box {
+        background: rgba(110, 68, 255, 0.15);
+        border: 2px solid #6e44ff;
+    }
+    .level-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+    .level-price {
+        font-size: 1.8rem;
+        font-weight: bold;
+    }
+    .hod-box .level-title, .hod-box .level-price {
+        color: #00cc96;
+    }
+    .lod-box .level-title, .lod-box .level-price {
+        color: #ef553b;
+    }
+    .current-box .level-title, .current-box .level-price {
+        color: #9e86d9;
+    }
+    .distance-info {
+        font-size: 0.9rem;
+        margin-top: 8px;
+        opacity: 0.9;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -564,12 +629,18 @@ def get_daily_high_low(ticker):
             pct_from_high = (current / high - 1) * 100
             pct_from_low = (current / low - 1) * 100
             
+            # Get the time of day when high and low occurred
+            high_time = today_data['High'].idxmax().strftime('%H:%M')
+            low_time = today_data['Low'].idxmin().strftime('%H:%M')
+            
             return {
                 'high': high,
                 'low': low,
                 'current': current,
                 'pct_from_high': pct_from_high,
-                'pct_from_low': pct_from_low
+                'pct_from_low': pct_from_low,
+                'high_time': high_time,
+                'low_time': low_time
             }
         else:
             return None
@@ -843,46 +914,50 @@ if st.session_state.data_loaded:
         # Get current day's high and low
         daily_levels = get_daily_high_low(st.session_state.selected_ticker)
         if daily_levels:
-            st.markdown("<div class='market-levels'>", unsafe_allow_html=True)
-            st.markdown("### Today's Key Levels")
-            
             # Format with appropriate decimal places
             is_forex = 'USD=X' in st.session_state.selected_ticker
             decimal_places = 5 if is_forex else 2
             
-            # Display high of day
-            st.markdown(f"""
-            <div class='level-item level-high'>
-                <span class='level-label'>High of Day (HOD):</span>
-                <span class='level-value'>{daily_levels['high']:.{decimal_places}f}</span>
-            </div>
+            st.markdown("""
+            <div class="key-levels-container">
+                <div class="key-levels-header">TODAY'S KEY PRICE LEVELS</div>
+                <div class="key-level-row">
             """, unsafe_allow_html=True)
             
-            # Display low of day
+            # High of Day Box
             st.markdown(f"""
-            <div class='level-item level-low'>
-                <span class='level-label'>Low of Day (LOD):</span>
-                <span class='level-value'>{daily_levels['low']:.{decimal_places}f}</span>
-            </div>
+                <div class="key-level-box hod-box">
+                    <div class="level-title">HIGH OF DAY (HOD)</div>
+                    <div class="level-price">{daily_levels['high']:.{decimal_places}f}</div>
+                    <div class="distance-info">Time: {daily_levels['high_time']}</div>
+                    <div class="distance-info">Current: {abs(daily_levels['pct_from_high']):.2f}% below HOD</div>
+                </div>
             """, unsafe_allow_html=True)
             
-            # Display current price and distance from HOD/LOD
+            # Current Price Box
             st.markdown(f"""
-            <div class='level-item'>
-                <span class='level-label'>Current Price:</span>
-                <span class='level-value'>{daily_levels['current']:.{decimal_places}f}</span>
-            </div>
-            <div class='level-item'>
-                <span class='level-label'>Distance from HOD:</span>
-                <span class='level-value'>{daily_levels['pct_from_high']:.2f}%</span>
-            </div>
-            <div class='level-item'>
-                <span class='level-label'>Distance from LOD:</span>
-                <span class='level-value'>{daily_levels['pct_from_low']:.2f}%</span>
-            </div>
+                <div class="key-level-box current-box">
+                    <div class="level-title">CURRENT PRICE</div>
+                    <div class="level-price">{daily_levels['current']:.{decimal_places}f}</div>
+                    <div class="distance-info">Updated: {datetime.now().strftime('%H:%M:%S')}</div>
+                    <div class="distance-info">Range: {((daily_levels['high']/daily_levels['low'])-1)*100:.2f}% today</div>
+                </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Low of Day Box
+            st.markdown(f"""
+                <div class="key-level-box lod-box">
+                    <div class="level-title">LOW OF DAY (LOD)</div>
+                    <div class="level-price">{daily_levels['low']:.{decimal_places}f}</div>
+                    <div class="distance-info">Time: {daily_levels['low_time']}</div>
+                    <div class="distance-info">Current: {abs(daily_levels['pct_from_low']):.2f}% above LOD</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("""
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
         # TradingView Chart with predictions
         st.markdown("### TradingView Chart with Predictions")
