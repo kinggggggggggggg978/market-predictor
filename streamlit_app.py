@@ -108,11 +108,11 @@ st.markdown("""
         margin-top: -0.5rem;
     }
     .tradingview-widget-container iframe {
-        height: 800px !important;
+        height: 1000px !important;
         width: 100% !important;
     }
     .tradingview-widget-container {
-        height: 800px !important;
+        height: 1000px !important;
         width: 100% !important;
     }
     .live-indicator {
@@ -231,7 +231,8 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             "studies": [
               "RSI@tv-basicstudies",
               "MAExp@tv-basicstudies",
-              "MACD@tv-basicstudies"
+              "MACD@tv-basicstudies",
+              "BB@tv-basicstudies"
             ],
             "container_id": "tradingview_chart",
             "hide_top_toolbar": false,
@@ -313,6 +314,61 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
                     }}
                   }}
                 );
+                
+                // Add HOD (High of Day) and LOD (Low of Day) lines
+                var now = new Date();
+                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                var todayTimestamp = Math.floor(today.getTime() / 1000);
+                
+                // Get data for the current day
+                widget.activeChart().onDataLoaded().subscribe(null, function() {{
+                  var symbolInfo = widget.activeChart().symbolExt();
+                  var resolution = widget.activeChart().resolution();
+                  
+                  // Add HOD line (in bright green)
+                  widget.chart().createShape(
+                    {{ time: todayTimestamp, price: symbolInfo.high }},
+                    {{ time: todayTimestamp + 86400, price: symbolInfo.high }},
+                    {{
+                      shape: "horizontal_line",
+                      lock: true,
+                      disableSelection: true,
+                      disableSave: true,
+                      disableUndo: true,
+                      overrides: {{ 
+                        linecolor: "#00ff00",
+                        linewidth: 2,
+                        linestyle: 0,
+                        showLabel: true,
+                        text: "HOD: " + symbolInfo.high.toFixed({5 if 'USD=X' in ticker else 2}),
+                        textcolor: "#00ff00",
+                        fontsize: 14
+                      }}
+                    }}
+                  );
+                  
+                  // Add LOD line (in bright red)
+                  widget.chart().createShape(
+                    {{ time: todayTimestamp, price: symbolInfo.low }},
+                    {{ time: todayTimestamp + 86400, price: symbolInfo.low }},
+                    {{
+                      shape: "horizontal_line",
+                      lock: true,
+                      disableSelection: true,
+                      disableSave: true,
+                      disableUndo: true,
+                      overrides: {{ 
+                        linecolor: "#ff0000",
+                        linewidth: 2,
+                        linestyle: 0,
+                        showLabel: true,
+                        text: "LOD: " + symbolInfo.low.toFixed({5 if 'USD=X' in ticker else 2}),
+                        textcolor: "#ff0000",
+                        fontsize: 14
+                      }}
+                    }}
+                  );
+                }});
               }}, 2000); // Give the chart time to load
             }}
           }});
@@ -345,7 +401,8 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             "studies": [
               "RSI@tv-basicstudies",
               "MAExp@tv-basicstudies",
-              "MACD@tv-basicstudies"
+              "MACD@tv-basicstudies",
+              "BB@tv-basicstudies"
             ],
             "container_id": "tradingview_chart",
             "hide_top_toolbar": false,
@@ -360,7 +417,65 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
               "paneProperties.background": "#131722",
               "scalesProperties.lineColor": "#555",
             }},
-            "container_id": "tradingview_chart"
+            "container_id": "tradingview_chart",
+            "loaded_callback": function(widget) {{
+              setTimeout(function() {{
+                // Add HOD (High of Day) and LOD (Low of Day) lines
+                var now = new Date();
+                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                var todayTimestamp = Math.floor(today.getTime() / 1000);
+                
+                // Get data for the current day
+                widget.activeChart().onDataLoaded().subscribe(null, function() {{
+                  var symbolInfo = widget.activeChart().symbolExt();
+                  var resolution = widget.activeChart().resolution();
+                  
+                  // Add HOD line (in bright green)
+                  widget.chart().createShape(
+                    {{ time: todayTimestamp, price: symbolInfo.high }},
+                    {{ time: todayTimestamp + 86400, price: symbolInfo.high }},
+                    {{
+                      shape: "horizontal_line",
+                      lock: true,
+                      disableSelection: true,
+                      disableSave: true,
+                      disableUndo: true,
+                      overrides: {{ 
+                        linecolor: "#00ff00",
+                        linewidth: 2,
+                        linestyle: 0,
+                        showLabel: true,
+                        text: "HOD: " + symbolInfo.high.toFixed({5 if 'USD=X' in ticker else 2}),
+                        textcolor: "#00ff00",
+                        fontsize: 14
+                      }}
+                    }}
+                  );
+                  
+                  // Add LOD line (in bright red)
+                  widget.chart().createShape(
+                    {{ time: todayTimestamp, price: symbolInfo.low }},
+                    {{ time: todayTimestamp + 86400, price: symbolInfo.low }},
+                    {{
+                      shape: "horizontal_line",
+                      lock: true,
+                      disableSelection: true,
+                      disableSave: true,
+                      disableUndo: true,
+                      overrides: {{ 
+                        linecolor: "#ff0000",
+                        linewidth: 2,
+                        linestyle: 0,
+                        showLabel: true,
+                        text: "LOD: " + symbolInfo.low.toFixed({5 if 'USD=X' in ticker else 2}),
+                        textcolor: "#ff0000",
+                        fontsize: 14
+                      }}
+                    }}
+                  );
+                }});
+              }}, 2000); // Give the chart time to load
+            }}
           }});
           </script>
         </div>
@@ -771,7 +886,7 @@ if st.session_state.data_loaded:
         )
         
         # Display the TradingView chart with increased height
-        st.components.v1.html(tradingview_widget, height=800)
+        st.components.v1.html(tradingview_widget, height=1000)
 
 # Simplified backtesting section
 st.markdown("---")
@@ -881,7 +996,7 @@ if st.button("Open Backtesting"):
                 backtest_ticker, 
                 backtest_interval
             )
-            st.components.v1.html(tradingview_widget, height=800)
+            st.components.v1.html(tradingview_widget, height=1000)
                 
         except Exception as e:
             backtest_status.error(f"Error in backtesting: {str(e)}")
