@@ -277,7 +277,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
                       linewidth: 2,
                       linestyle: 2,
                       showLabel: true,
-                      text: "Predicted High: {high_price:.2f}",
+                      text: "Predicted High: {high_price:.5f if 'USD=X' in ticker else high_price:.2f}",
                       textcolor: "#00cc96",
                       fontsize: 14
                     }}
@@ -299,7 +299,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
                       linewidth: 2,
                       linestyle: 2,
                       showLabel: true,
-                      text: "Predicted Low: {low_price:.2f}",
+                      text: "Predicted Low: {low_price:.5f if 'USD=X' in ticker else low_price:.2f}",
                       textcolor: "#ef553b",
                       fontsize: 14
                     }}
@@ -454,7 +454,12 @@ def generate_market_prediction(ticker, prediction_date, data_hash, current_price
     
     # Generate predictions using the seeded random number generator
     price_change_pct = random.uniform(-volatility * 100, volatility * 100)
-    price_range_pct = random.uniform(1.0, 3.0) * volatility * 100
+    
+    # Adjust price range based on asset type - smaller range for forex
+    if 'USD=X' in ticker:
+        price_range_pct = random.uniform(0.5, 1.5) * volatility * 100
+    else:
+        price_range_pct = random.uniform(1.0, 3.0) * volatility * 100
     
     # Convert to actual prices
     future_price = current_price * (1 + (price_change_pct / 100))
@@ -711,8 +716,13 @@ if st.session_state.data_loaded:
         with col1:
             st.markdown("<div class='prediction-box'>", unsafe_allow_html=True)
             st.markdown(f"**Price Predictions:**")
-            st.markdown(f"<span class='prediction-value'>High: {float(pred['high']):.2f}</span>", unsafe_allow_html=True)
-            st.markdown(f"<span class='prediction-value'>Low: {float(pred['low']):.2f}</span>", unsafe_allow_html=True)
+            
+            # Use more decimal places for currency pairs
+            is_forex = 'USD=X' in st.session_state.selected_ticker
+            decimal_places = 5 if is_forex else 2
+            
+            st.markdown(f"<span class='prediction-value'>High: {float(pred['high']):.{decimal_places}f}</span>", unsafe_allow_html=True)
+            st.markdown(f"<span class='prediction-value'>Low: {float(pred['low']):.{decimal_places}f}</span>", unsafe_allow_html=True)
             
             if st.session_state.bias_enabled and pred['direction']:
                 direction_class = "bullish" if pred['direction'] == "Bullish" else "bearish"
