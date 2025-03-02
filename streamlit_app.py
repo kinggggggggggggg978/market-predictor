@@ -466,8 +466,71 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
                 font=dict(color="#6e44ff", size=12),
                 yanchor="bottom"
             )
-        
+    
+    # Create safe time range buttons that check data length
+    data_length = len(data.index)
+    time_buttons = []
+    
+    # Only add buttons if we have enough data points
+    # 1 Month (30 days) button
+    if data_length >= 30:
+        time_buttons.append(dict(
+            label="1M",
+            method="relayout",
+            args=[{"xaxis.range": [data.index[max(-30, -data_length)], data.index[-1]]}]
+        ))
+    
+    # 3 Months (90 days) button
+    if data_length >= 90:
+        time_buttons.append(dict(
+            label="3M",
+            method="relayout",
+            args=[{"xaxis.range": [data.index[max(-90, -data_length)], data.index[-1]]}]
+        ))
+    
+    # 6 Months (180 days) button
+    if data_length >= 180:
+        time_buttons.append(dict(
+            label="6M",
+            method="relayout",
+            args=[{"xaxis.range": [data.index[max(-180, -data_length)], data.index[-1]]}]
+        ))
+    
+    # 1 Year (365 days) button
+    if data_length >= 365:
+        time_buttons.append(dict(
+            label="1Y",
+            method="relayout",
+            args=[{"xaxis.range": [data.index[max(-365, -data_length)], data.index[-1]]}]
+        ))
+    
+    # Always add the "All" button
+    time_buttons.append(dict(
+        label="All",
+        method="relayout",
+        args=[{"xaxis.range": [data.index[0], data.index[-1]]}]
+    ))
+    
     # Update layout with improved settings for candle visibility
+    updatemenus = []
+    
+    # Only add the time range menu if we have buttons
+    if time_buttons:
+        updatemenus.append(dict(
+            type="buttons",
+            direction="right",
+            buttons=time_buttons,
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=0.05,
+            xanchor="left",
+            y=1.15,
+            yanchor="top",
+            bgcolor="rgba(110, 68, 255, 0.2)",
+            bordercolor="#6e44ff",
+            font=dict(color="#ffffff")
+        ))
+    
     fig.update_layout(
         title=f"{ticker} Chart ({interval})",
         xaxis_title="Date",
@@ -500,49 +563,7 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             showgrid=True
         ),
         margin=dict(l=40, r=40, t=40, b=40),
-        # Add buttons for common time ranges to better view candles
-        updatemenus=[
-            dict(
-                type="buttons",
-                direction="right",
-                buttons=[
-                    dict(
-                        label="1M",
-                        method="relayout",
-                        args=[{"xaxis.range": [data.index[-30], data.index[-1]]}]
-                    ),
-                    dict(
-                        label="3M",
-                        method="relayout",
-                        args=[{"xaxis.range": [data.index[-90], data.index[-1]]}]
-                    ),
-                    dict(
-                        label="6M",
-                        method="relayout",
-                        args=[{"xaxis.range": [data.index[-180], data.index[-1]]}]
-                    ),
-                    dict(
-                        label="1Y",
-                        method="relayout",
-                        args=[{"xaxis.range": [data.index[-365], data.index[-1]]}]
-                    ),
-                    dict(
-                        label="All",
-                        method="relayout",
-                        args=[{"xaxis.range": [data.index[0], data.index[-1]]}]
-                    ),
-                ],
-                pad={"r": 10, "t": 10},
-                showactive=True,
-                x=0.05,
-                xanchor="left",
-                y=1.15,
-                yanchor="top",
-                bgcolor="rgba(110, 68, 255, 0.2)",
-                bordercolor="#6e44ff",
-                font=dict(color="#ffffff")
-            )
-        ]
+        updatemenus=updatemenus
     )
     
     # Improve candlestick appearance
@@ -559,15 +580,25 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
         ] if interval == "Daily" else None
     )
     
-    # Add chart subtitle with instructions
-    fig.add_annotation(
-        text="Use the buttons above or the range slider below to adjust the view. Drag to zoom or double-click to reset.",
-        xref="paper", yref="paper",
-        x=0, y=1.13,
-        showarrow=False,
-        font=dict(size=11, color="rgba(255,255,255,0.6)"),
-        align="left"
-    )
+    # Add chart subtitle with instructions (only if we have time buttons)
+    if time_buttons:
+        fig.add_annotation(
+            text="Use the buttons above or the range slider below to adjust the view. Drag to zoom or double-click to reset.",
+            xref="paper", yref="paper",
+            x=0, y=1.13,
+            showarrow=False,
+            font=dict(size=11, color="rgba(255,255,255,0.6)"),
+            align="left"
+        )
+    else:
+        fig.add_annotation(
+            text="Use the range slider below to adjust the view. Drag to zoom or double-click to reset.",
+            xref="paper", yref="paper",
+            x=0, y=1.13,
+            showarrow=False,
+            font=dict(size=11, color="rgba(255,255,255,0.6)"),
+            align="left"
+        )
     
     return fig
 
