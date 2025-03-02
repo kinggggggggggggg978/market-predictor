@@ -302,7 +302,41 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
     tv_ticker = ticker_map.get(ticker, ticker)
     tv_interval = interval_map.get(interval, "D")
     
-    # Create chart with predictions if available
+    # Use a simpler, more reliable TradingView Advanced Chart widget
+    custom_script = f"""
+    <!-- TradingView Widget BEGIN -->
+    <div class="tradingview-widget-container" style="height:1200px;width:100%;">
+      <div id="tradingview_chart" style="height:1200px;width:100%"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+      <script type="text/javascript">
+      new TradingView.widget(
+      {{
+        "width": "100%",
+        "height": 1200,
+        "symbol": "{tv_ticker}",
+        "interval": "{tv_interval}",
+        "timezone": "exchange",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#f1f3f6",
+        "enable_publishing": false,
+        "hide_side_toolbar": false,
+        "allow_symbol_change": true,
+        "studies": [
+          "RSI@tv-basicstudies",
+          "MAExp@tv-basicstudies",
+          "MACD@tv-basicstudies",
+          "BB@tv-basicstudies"
+        ],
+        "container_id": "tradingview_chart"
+      }});
+      </script>
+    </div>
+    <!-- TradingView Widget END -->
+    """
+    
+    # If we have prediction data, add an info message above the chart
     if prediction_data:
         pred_date = prediction_data['date'].strftime('%Y-%m-%d')
         high_price = float(prediction_data['high'])
@@ -316,173 +350,23 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             high_price_formatted = f"{high_price:.2f}"
             low_price_formatted = f"{low_price:.2f}"
         
-        # Create a custom TradingView chart with prediction lines
-        custom_script = f"""
-        <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container" style="height:1200px;width:100%;">
-          <div id="tradingview_chart" style="height:1200px;width:100%;"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-          <script type="text/javascript">
-          new TradingView.widget(
-          {{
-            "autosize": false,
-            "width": "100%",
-            "height": 1200,
-            "symbol": "{tv_ticker}",
-            "interval": "{tv_interval}",
-            "timezone": "exchange",
-            "theme": "dark",
-            "style": "1",
-            "locale": "en",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "withdateranges": true,
-            "hide_side_toolbar": false,
-            "allow_symbol_change": true,
-            "studies": [
-              "RSI@tv-basicstudies",
-              "MAExp@tv-basicstudies",
-              "MACD@tv-basicstudies",
-              "BB@tv-basicstudies"
-            ],
-            "container_id": "tradingview_chart",
-            "hide_top_toolbar": false,
-            "save_image": false,
-            "details": true,
-            "calendar": false,
-            "hotlist": false,
-            "show_popup_button": true,
-            "popup_width": "1000",
-            "popup_height": "650",
-            "overrides": {{
-              "paneProperties.background": "#131722",
-              "scalesProperties.lineColor": "#555",
-              "paneProperties.height": 1200
-            }},
-            "container_id": "tradingview_chart",
-            "loaded_callback": function(widget) {{
-              setTimeout(function() {{
-                // Add prediction date line
-                widget.chart().createMultipointShape([
-                  {{ time: {int(datetime.strptime(pred_date, '%Y-%m-%d').timestamp())}, price: {high_price*0.95} }},
-                  {{ time: {int(datetime.strptime(pred_date, '%Y-%m-%d').timestamp())}, price: {high_price*1.05} }}
-                ], {{
-                  shape: "vertical_line",
-                  lock: true,
-                  disableSelection: true,
-                  disableSave: true,
-                  disableUndo: true,
-                  overrides: {{ 
-                    linecolor: "#6e44ff",
-                    linewidth: 2,
-                    linestyle: 2,
-                    showLabel: true,
-                    text: "Prediction Date",
-                    textcolor: "#6e44ff",
-                    fontsize: 14
-                  }}
-                }});
-                
-                // Add high prediction line
-                widget.chart().createShape(
-                  {{ time: {int((datetime.strptime(pred_date, '%Y-%m-%d') - timedelta(days=10)).timestamp())}, price: {high_price} }},
-                  {{ time: {int((datetime.strptime(pred_date, '%Y-%m-%d') + timedelta(days=2)).timestamp())}, price: {high_price} }},
-                  {{
-                    shape: "horizontal_line",
-                    lock: true,
-                    disableSelection: true,
-                    disableSave: true,
-                    disableUndo: true,
-                    overrides: {{ 
-                      linecolor: "#00cc96",
-                      linewidth: 2,
-                      linestyle: 2,
-                      showLabel: true,
-                      text: "Predicted High: {high_price_formatted}",
-                      textcolor: "#00cc96",
-                      fontsize: 14
-                    }}
-                  }}
-                );
-                
-                // Add low prediction line
-                widget.chart().createShape(
-                  {{ time: {int((datetime.strptime(pred_date, '%Y-%m-%d') - timedelta(days=10)).timestamp())}, price: {low_price} }},
-                  {{ time: {int((datetime.strptime(pred_date, '%Y-%m-%d') + timedelta(days=2)).timestamp())}, price: {low_price} }},
-                  {{
-                    shape: "horizontal_line",
-                    lock: true,
-                    disableSelection: true,
-                    disableSave: true,
-                    disableUndo: true,
-                    overrides: {{ 
-                      linecolor: "#ef553b",
-                      linewidth: 2,
-                      linestyle: 2,
-                      showLabel: true,
-                      text: "Predicted Low: {low_price_formatted}",
-                      textcolor: "#ef553b",
-                      fontsize: 14
-                    }}
-                  }}
-                );
-              }}, 2000); // Give the chart time to load
-            }}
-          }});
-          </script>
+        # Add prediction info above the chart
+        prediction_info = f"""
+        <div style="background-color: rgba(110, 68, 255, 0.1); padding: 10px; border-radius: 5px; 
+                    margin-bottom: 10px; border: 1px solid #6e44ff; text-align: center;">
+            <p style="font-size: 16px; margin-bottom: 5px;">
+                <strong>Prediction for {pred_date}:</strong>
+            </p>
+            <p style="font-size: 16px; margin-bottom: 5px;">
+                <span style="color: #00cc96; font-weight: bold;">Predicted High: {high_price_formatted}</span> | 
+                <span style="color: #ef553b; font-weight: bold;">Predicted Low: {low_price_formatted}</span>
+            </p>
+            <p style="font-size: 14px; opacity: 0.8;">
+                Look for these levels in the chart below (they're not drawn as lines)
+            </p>
         </div>
-        <!-- TradingView Widget END -->
         """
-    else:
-        # Create a basic TradingView chart without predictions
-        custom_script = f"""
-        <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container" style="height:1200px;width:100%;">
-          <div id="tradingview_chart" style="height:1200px;width:100%;"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-          <script type="text/javascript">
-          new TradingView.widget(
-          {{
-            "autosize": false,
-            "width": "100%",
-            "height": 1200,
-            "symbol": "{tv_ticker}",
-            "interval": "{tv_interval}",
-            "timezone": "exchange",
-            "theme": "dark",
-            "style": "1",
-            "locale": "en",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "withdateranges": true,
-            "hide_side_toolbar": false,
-            "allow_symbol_change": true,
-            "studies": [
-              "RSI@tv-basicstudies",
-              "MAExp@tv-basicstudies",
-              "MACD@tv-basicstudies",
-              "BB@tv-basicstudies"
-            ],
-            "container_id": "tradingview_chart",
-            "hide_top_toolbar": false,
-            "save_image": false,
-            "details": true,
-            "calendar": false,
-            "hotlist": false,
-            "show_popup_button": true,
-            "popup_width": "1000",
-            "popup_height": "650",
-            "overrides": {{
-              "paneProperties.background": "#131722",
-              "scalesProperties.lineColor": "#555",
-              "paneProperties.height": 1200
-            }},
-            "container_id": "tradingview_chart"
-          }});
-          </script>
-        </div>
-        <!-- TradingView Widget END -->
-        """
+        custom_script = prediction_info + custom_script
     
     return custom_script
 
@@ -969,8 +853,8 @@ if st.session_state.data_loaded:
             pred
         )
         
-        # Display the TradingView chart with reduced height
-        st.components.v1.html(tradingview_widget, height=1200)
+        # Display the TradingView chart
+        st.components.v1.html(tradingview_widget, height=1300)
 
 # Simplified backtesting section
 st.markdown("---")
@@ -1075,12 +959,12 @@ if st.button("Open Backtesting"):
             # Display TradingView chart
             st.markdown("### TradingView Chart")
             
-            # Display the TradingView chart with reduced height
+            # Display the TradingView chart
             tradingview_widget = create_tradingview_widget(
                 backtest_ticker, 
                 backtest_interval
             )
-            st.components.v1.html(tradingview_widget, height=1200)
+            st.components.v1.html(tradingview_widget, height=1300)
                 
         except Exception as e:
             backtest_status.error(f"Error in backtesting: {str(e)}")
