@@ -199,6 +199,14 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
         high_price = float(prediction_data['high'])
         low_price = float(prediction_data['low'])
         
+        # Format prediction values with appropriate decimal places
+        if 'USD=X' in ticker:
+            high_price_formatted = f"{high_price:.5f}"
+            low_price_formatted = f"{low_price:.5f}"
+        else:
+            high_price_formatted = f"{high_price:.2f}"
+            low_price_formatted = f"{low_price:.2f}"
+        
         # Create a custom TradingView chart with prediction lines
         custom_script = f"""
         <!-- TradingView Widget BEGIN -->
@@ -277,7 +285,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
                       linewidth: 2,
                       linestyle: 2,
                       showLabel: true,
-                      text: "Predicted High: {high_price:.5f if 'USD=X' in ticker else high_price:.2f}",
+                      text: "Predicted High: {high_price_formatted}",
                       textcolor: "#00cc96",
                       fontsize: 14
                     }}
@@ -299,7 +307,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
                       linewidth: 2,
                       linestyle: 2,
                       showLabel: true,
-                      text: "Predicted Low: {low_price:.5f if 'USD=X' in ticker else low_price:.2f}",
+                      text: "Predicted Low: {low_price_formatted}",
                       textcolor: "#ef553b",
                       fontsize: 14
                     }}
