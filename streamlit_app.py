@@ -396,33 +396,58 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
         low_price_formatted = f"{low_price:.{decimal_places}f}"
         
         # Create prediction date vertical line
-        fig.add_vline(
-            x=pred_date, 
-            line_dash="dash", 
-            line_color="#6e44ff",
-            annotation_text=f"Prediction: {pred_date.strftime('%Y-%m-%d')}",
-            annotation_position="top right"
-        )
+        # Convert the date to timestamp
+        if isinstance(pred_date, datetime):
+            pred_date_ts = pred_date
+        else:
+            # If it's a date object (not datetime), convert to datetime first
+            pred_date_ts = datetime.combine(pred_date, datetime.min.time())
         
-        # Add horizontal line for predicted high
-        fig.add_hline(
-            y=high_price, 
-            line_dash="dash", 
-            line_width=2,
-            line_color="#00cc96",
-            annotation_text=f"Predicted High: {high_price_formatted}",
-            annotation_position="right"
-        )
-        
-        # Add horizontal line for predicted low
-        fig.add_hline(
-            y=low_price, 
-            line_dash="dash", 
-            line_width=2,
-            line_color="#ef553b",
-            annotation_text=f"Predicted Low: {low_price_formatted}",
-            annotation_position="right"
-        )
+        # Find a visible part of the chart to place annotations
+        # Use the last 20% of the visible data for annotation placement
+        chart_dates = data.index.tolist()
+        if len(chart_dates) > 0:
+            annotation_date = chart_dates[int(len(chart_dates) * 0.8)]
+            
+            # Add high prediction line
+            fig.add_hline(
+                y=high_price, 
+                line_dash="dash", 
+                line_width=2,
+                line_color="#00cc96",
+                annotation_text=f"Predicted High: {high_price_formatted}",
+                annotation_position="right"
+            )
+            
+            # Add low prediction line
+            fig.add_hline(
+                y=low_price, 
+                line_dash="dash", 
+                line_width=2,
+                line_color="#ef553b",
+                annotation_text=f"Predicted Low: {low_price_formatted}",
+                annotation_position="right"
+            )
+            
+            # Instead of using vline (which is causing the error), add a shape for the prediction date
+            fig.add_shape(
+                type="line",
+                x0=pred_date_ts,
+                y0=min(data['Low'].min(), low_price) * 0.98,
+                x1=pred_date_ts,
+                y1=max(data['High'].max(), high_price) * 1.02,
+                line=dict(color="#6e44ff", width=2, dash="dash"),
+            )
+            
+            # Add an annotation for the prediction date
+            fig.add_annotation(
+                x=pred_date_ts,
+                y=max(data['High'].max(), high_price) * 1.02,
+                text=f"Prediction: {pred_date_ts.strftime('%Y-%m-%d')}",
+                showarrow=False,
+                font=dict(color="#6e44ff", size=12),
+                yanchor="bottom"
+            )
         
     # Update layout
     fig.update_layout(
