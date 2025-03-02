@@ -12,13 +12,40 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeRegressor
-from tensorflow.keras.models import Sequential, load_model, save_model
-from tensorflow.keras.layers import Dense, Dropout
+# Modified TensorFlow import
+try:
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Dropout
+except ImportError:
+    # Fallback to direct keras import
+    try:
+        from keras.models import Sequential
+        from keras.layers import Dense, Dropout
+    except ImportError:
+        st.warning("TensorFlow/Keras could not be imported. Some features may be limited.")
+        # Define dummy classes to prevent errors
+        class Sequential:
+            def __init__(self, *args, **kwargs):
+                pass
+            def add(self, *args, **kwargs):
+                pass
+            def compile(self, *args, **kwargs):
+                pass
+            def fit(self, *args, **kwargs):
+                return None
+            def predict(self, *args, **kwargs):
+                return np.zeros((1, 1))
+        class Dense:
+            def __init__(self, *args, **kwargs):
+                pass
+        class Dropout:
+            def __init__(self, *args, **kwargs):
+                pass
+
 import time
 import json
 import random
 import os
-import tensorflow as tf
 import joblib
 import hashlib
 
@@ -27,7 +54,11 @@ RANDOM_SEED = 42
 random.seed(RANDOM_SEED)
 np.random.seed(RANDOM_SEED)
 os.environ['PYTHONHASHSEED'] = str(RANDOM_SEED)
-tf.random.set_seed(RANDOM_SEED)
+try:
+    import tensorflow as tf
+    tf.random.set_seed(RANDOM_SEED)
+except:
+    pass
 
 # Set page configuration
 st.set_page_config(
