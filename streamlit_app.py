@@ -108,11 +108,20 @@ st.markdown("""
         margin-top: -0.5rem;
     }
     .tradingview-widget-container iframe {
-        height: 1500px !important;
+        height: 2500px !important;
         width: 100% !important;
+        min-height: 2500px !important;
     }
     .tradingview-widget-container {
-        height: 1500px !important;
+        height: 2500px !important;
+        width: 100% !important;
+        min-height: 2500px !important;
+    }
+    .tradingview-widget-container div {
+        height: 2500px !important;
+    }
+    #tradingview_chart {
+        height: 2500px !important;
         width: 100% !important;
     }
     .live-indicator {
@@ -210,13 +219,15 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
         # Create a custom TradingView chart with prediction lines
         custom_script = f"""
         <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container">
-          <div id="tradingview_chart"></div>
+        <div class="tradingview-widget-container" style="height:2500px;width:100%;">
+          <div id="tradingview_chart" style="height:2500px;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget(
           {{
-            "autosize": true,
+            "autosize": false,
+            "width": "100%",
+            "height": 2500,
             "symbol": "{tv_ticker}",
             "interval": "{tv_interval}",
             "timezone": "exchange",
@@ -246,6 +257,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             "overrides": {{
               "paneProperties.background": "#131722",
               "scalesProperties.lineColor": "#555",
+              "paneProperties.height": 2500
             }},
             "container_id": "tradingview_chart",
             "loaded_callback": function(widget) {{
@@ -380,13 +392,15 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
         # Create a basic TradingView chart without predictions
         custom_script = f"""
         <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container">
-          <div id="tradingview_chart"></div>
+        <div class="tradingview-widget-container" style="height:2500px;width:100%;">
+          <div id="tradingview_chart" style="height:2500px;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget(
           {{
-            "autosize": true,
+            "autosize": false,
+            "width": "100%",
+            "height": 2500,
             "symbol": "{tv_ticker}",
             "interval": "{tv_interval}",
             "timezone": "exchange",
@@ -416,6 +430,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             "overrides": {{
               "paneProperties.background": "#131722",
               "scalesProperties.lineColor": "#555",
+              "paneProperties.height": 2500
             }},
             "container_id": "tradingview_chart",
             "loaded_callback": function(widget) {{
@@ -886,7 +901,7 @@ if st.session_state.data_loaded:
         )
         
         # Display the TradingView chart with increased height
-        st.components.v1.html(tradingview_widget, height=1000)
+        st.components.v1.html(tradingview_widget, height=2500)
 
 # Simplified backtesting section
 st.markdown("---")
@@ -996,7 +1011,7 @@ if st.button("Open Backtesting"):
                 backtest_ticker, 
                 backtest_interval
             )
-            st.components.v1.html(tradingview_widget, height=1000)
+            st.components.v1.html(tradingview_widget, height=2500)
                 
         except Exception as e:
             backtest_status.error(f"Error in backtesting: {str(e)}")
