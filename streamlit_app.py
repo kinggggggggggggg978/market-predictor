@@ -108,20 +108,20 @@ st.markdown("""
         margin-top: -0.5rem;
     }
     .tradingview-widget-container iframe {
-        height: 2500px !important;
+        height: 1200px !important;
         width: 100% !important;
-        min-height: 2500px !important;
+        min-height: 1200px !important;
     }
     .tradingview-widget-container {
-        height: 2500px !important;
+        height: 1200px !important;
         width: 100% !important;
-        min-height: 2500px !important;
+        min-height: 1200px !important;
     }
     .tradingview-widget-container div {
-        height: 2500px !important;
+        height: 1200px !important;
     }
     #tradingview_chart {
-        height: 2500px !important;
+        height: 1200px !important;
         width: 100% !important;
     }
     .live-indicator {
@@ -152,6 +152,41 @@ st.markdown("""
         padding: 8px 15px;
         margin-bottom: 15px;
         border: 1px solid #00cc96;
+    }
+    .market-levels {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid #6e44ff;
+    }
+    .level-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 8px;
+        border-radius: 5px;
+    }
+    .level-high {
+        background: rgba(0, 204, 150, 0.1);
+        border-left: 4px solid #00cc96;
+    }
+    .level-low {
+        background: rgba(239, 85, 59, 0.1);
+        border-left: 4px solid #ef553b;
+    }
+    .level-label {
+        font-weight: bold;
+        color: #9e86d9;
+    }
+    .level-value {
+        font-weight: bold;
+    }
+    .level-high .level-value {
+        color: #00cc96;
+    }
+    .level-low .level-value {
+        color: #ef553b;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -219,15 +254,15 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
         # Create a custom TradingView chart with prediction lines
         custom_script = f"""
         <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container" style="height:2500px;width:100%;">
-          <div id="tradingview_chart" style="height:2500px;width:100%;"></div>
+        <div class="tradingview-widget-container" style="height:1200px;width:100%;">
+          <div id="tradingview_chart" style="height:1200px;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget(
           {{
             "autosize": false,
             "width": "100%",
-            "height": 2500,
+            "height": 1200,
             "symbol": "{tv_ticker}",
             "interval": "{tv_interval}",
             "timezone": "exchange",
@@ -257,7 +292,7 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             "overrides": {{
               "paneProperties.background": "#131722",
               "scalesProperties.lineColor": "#555",
-              "paneProperties.height": 2500
+              "paneProperties.height": 1200
             }},
             "container_id": "tradingview_chart",
             "loaded_callback": function(widget) {{
@@ -326,61 +361,6 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
                     }}
                   }}
                 );
-                
-                // Add HOD (High of Day) and LOD (Low of Day) lines
-                var now = new Date();
-                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                var todayTimestamp = Math.floor(today.getTime() / 1000);
-                
-                // Get data for the current day
-                widget.activeChart().onDataLoaded().subscribe(null, function() {{
-                  var symbolInfo = widget.activeChart().symbolExt();
-                  var resolution = widget.activeChart().resolution();
-                  
-                  // Add HOD line (in bright green)
-                  widget.chart().createShape(
-                    {{ time: todayTimestamp, price: symbolInfo.high }},
-                    {{ time: todayTimestamp + 86400, price: symbolInfo.high }},
-                    {{
-                      shape: "horizontal_line",
-                      lock: true,
-                      disableSelection: true,
-                      disableSave: true,
-                      disableUndo: true,
-                      overrides: {{ 
-                        linecolor: "#00ff00",
-                        linewidth: 2,
-                        linestyle: 0,
-                        showLabel: true,
-                        text: "HOD: " + symbolInfo.high.toFixed({5 if 'USD=X' in ticker else 2}),
-                        textcolor: "#00ff00",
-                        fontsize: 14
-                      }}
-                    }}
-                  );
-                  
-                  // Add LOD line (in bright red)
-                  widget.chart().createShape(
-                    {{ time: todayTimestamp, price: symbolInfo.low }},
-                    {{ time: todayTimestamp + 86400, price: symbolInfo.low }},
-                    {{
-                      shape: "horizontal_line",
-                      lock: true,
-                      disableSelection: true,
-                      disableSave: true,
-                      disableUndo: true,
-                      overrides: {{ 
-                        linecolor: "#ff0000",
-                        linewidth: 2,
-                        linestyle: 0,
-                        showLabel: true,
-                        text: "LOD: " + symbolInfo.low.toFixed({5 if 'USD=X' in ticker else 2}),
-                        textcolor: "#ff0000",
-                        fontsize: 14
-                      }}
-                    }}
-                  );
-                }});
               }}, 2000); // Give the chart time to load
             }}
           }});
@@ -392,15 +372,15 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
         # Create a basic TradingView chart without predictions
         custom_script = f"""
         <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container" style="height:2500px;width:100%;">
-          <div id="tradingview_chart" style="height:2500px;width:100%;"></div>
+        <div class="tradingview-widget-container" style="height:1200px;width:100%;">
+          <div id="tradingview_chart" style="height:1200px;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget(
           {{
             "autosize": false,
             "width": "100%",
-            "height": 2500,
+            "height": 1200,
             "symbol": "{tv_ticker}",
             "interval": "{tv_interval}",
             "timezone": "exchange",
@@ -430,67 +410,9 @@ def create_tradingview_widget(ticker, interval="D", prediction_data=None):
             "overrides": {{
               "paneProperties.background": "#131722",
               "scalesProperties.lineColor": "#555",
-              "paneProperties.height": 2500
+              "paneProperties.height": 1200
             }},
-            "container_id": "tradingview_chart",
-            "loaded_callback": function(widget) {{
-              setTimeout(function() {{
-                // Add HOD (High of Day) and LOD (Low of Day) lines
-                var now = new Date();
-                var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                var todayTimestamp = Math.floor(today.getTime() / 1000);
-                
-                // Get data for the current day
-                widget.activeChart().onDataLoaded().subscribe(null, function() {{
-                  var symbolInfo = widget.activeChart().symbolExt();
-                  var resolution = widget.activeChart().resolution();
-                  
-                  // Add HOD line (in bright green)
-                  widget.chart().createShape(
-                    {{ time: todayTimestamp, price: symbolInfo.high }},
-                    {{ time: todayTimestamp + 86400, price: symbolInfo.high }},
-                    {{
-                      shape: "horizontal_line",
-                      lock: true,
-                      disableSelection: true,
-                      disableSave: true,
-                      disableUndo: true,
-                      overrides: {{ 
-                        linecolor: "#00ff00",
-                        linewidth: 2,
-                        linestyle: 0,
-                        showLabel: true,
-                        text: "HOD: " + symbolInfo.high.toFixed({5 if 'USD=X' in ticker else 2}),
-                        textcolor: "#00ff00",
-                        fontsize: 14
-                      }}
-                    }}
-                  );
-                  
-                  // Add LOD line (in bright red)
-                  widget.chart().createShape(
-                    {{ time: todayTimestamp, price: symbolInfo.low }},
-                    {{ time: todayTimestamp + 86400, price: symbolInfo.low }},
-                    {{
-                      shape: "horizontal_line",
-                      lock: true,
-                      disableSelection: true,
-                      disableSave: true,
-                      disableUndo: true,
-                      overrides: {{ 
-                        linecolor: "#ff0000",
-                        linewidth: 2,
-                        linestyle: 0,
-                        showLabel: true,
-                        text: "LOD: " + symbolInfo.low.toFixed({5 if 'USD=X' in ticker else 2}),
-                        textcolor: "#ff0000",
-                        fontsize: 14
-                      }}
-                    }}
-                  );
-                }});
-              }}, 2000); // Give the chart time to load
-            }}
+            "container_id": "tradingview_chart"
           }});
           </script>
         </div>
@@ -626,6 +548,34 @@ def generate_market_prediction(ticker, prediction_date, data_hash, current_price
     }
     
     return predictions
+
+# Function to get daily high and low for a ticker
+def get_daily_high_low(ticker):
+    try:
+        # Get today's data
+        today_data = yf.download(ticker, period="1d", interval="1m")
+        
+        if not today_data.empty:
+            high = float(today_data['High'].max())
+            low = float(today_data['Low'].min())
+            current = float(today_data['Close'].iloc[-1])
+            
+            # Calculate percentage from high and low
+            pct_from_high = (current / high - 1) * 100
+            pct_from_low = (current / low - 1) * 100
+            
+            return {
+                'high': high,
+                'low': low,
+                'current': current,
+                'pct_from_high': pct_from_high,
+                'pct_from_low': pct_from_low
+            }
+        else:
+            return None
+    except Exception as e:
+        st.error(f"Error fetching high/low data: {str(e)}")
+        return None
 
 # Company header with logo
 st.markdown("""
@@ -890,6 +840,50 @@ if st.session_state.data_loaded:
                 st.markdown(f"<span class='prediction-value'>Low: {display_hour_low}:00 {am_pm_low}</span>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
         
+        # Get current day's high and low
+        daily_levels = get_daily_high_low(st.session_state.selected_ticker)
+        if daily_levels:
+            st.markdown("<div class='market-levels'>", unsafe_allow_html=True)
+            st.markdown("### Today's Key Levels")
+            
+            # Format with appropriate decimal places
+            is_forex = 'USD=X' in st.session_state.selected_ticker
+            decimal_places = 5 if is_forex else 2
+            
+            # Display high of day
+            st.markdown(f"""
+            <div class='level-item level-high'>
+                <span class='level-label'>High of Day (HOD):</span>
+                <span class='level-value'>{daily_levels['high']:.{decimal_places}f}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Display low of day
+            st.markdown(f"""
+            <div class='level-item level-low'>
+                <span class='level-label'>Low of Day (LOD):</span>
+                <span class='level-value'>{daily_levels['low']:.{decimal_places}f}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Display current price and distance from HOD/LOD
+            st.markdown(f"""
+            <div class='level-item'>
+                <span class='level-label'>Current Price:</span>
+                <span class='level-value'>{daily_levels['current']:.{decimal_places}f}</span>
+            </div>
+            <div class='level-item'>
+                <span class='level-label'>Distance from HOD:</span>
+                <span class='level-value'>{daily_levels['pct_from_high']:.2f}%</span>
+            </div>
+            <div class='level-item'>
+                <span class='level-label'>Distance from LOD:</span>
+                <span class='level-value'>{daily_levels['pct_from_low']:.2f}%</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+        
         # TradingView Chart with predictions
         st.markdown("### TradingView Chart with Predictions")
         
@@ -900,8 +894,8 @@ if st.session_state.data_loaded:
             pred
         )
         
-        # Display the TradingView chart with increased height
-        st.components.v1.html(tradingview_widget, height=2500)
+        # Display the TradingView chart with reduced height
+        st.components.v1.html(tradingview_widget, height=1200)
 
 # Simplified backtesting section
 st.markdown("---")
@@ -1006,12 +1000,12 @@ if st.button("Open Backtesting"):
             # Display TradingView chart
             st.markdown("### TradingView Chart")
             
-            # Display the TradingView chart with increased height
+            # Display the TradingView chart with reduced height
             tradingview_widget = create_tradingview_widget(
                 backtest_ticker, 
                 backtest_interval
             )
-            st.components.v1.html(tradingview_widget, height=2500)
+            st.components.v1.html(tradingview_widget, height=1200)
                 
         except Exception as e:
             backtest_status.error(f"Error in backtesting: {str(e)}")
