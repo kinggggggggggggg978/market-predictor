@@ -107,23 +107,6 @@ st.markdown("""
         font-style: italic;
         margin-top: -0.5rem;
     }
-    .tradingview-widget-container iframe {
-        height: 1200px !important;
-        width: 100% !important;
-        min-height: 1200px !important;
-    }
-    .tradingview-widget-container {
-        height: 1200px !important;
-        width: 100% !important;
-        min-height: 1200px !important;
-    }
-    .tradingview-widget-container div {
-        height: 1200px !important;
-    }
-    #tradingview_chart {
-        height: 1200px !important;
-        width: 100% !important;
-    }
     .live-indicator {
         display: inline-block;
         width: 10px;
@@ -253,6 +236,37 @@ st.markdown("""
         margin-top: 8px;
         opacity: 0.9;
     }
+    .chart-container {
+        background: rgba(19, 23, 34, 0.5);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 2px solid #6e44ff;
+    }
+    .prediction-line-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+    .prediction-line-item {
+        display: flex;
+        align-items: center;
+        margin-right: 20px;
+    }
+    .prediction-line-color {
+        width: 20px;
+        height: 3px;
+        margin-right: 8px;
+    }
+    .prediction-high-color {
+        background-color: #00cc96;
+    }
+    .prediction-low-color {
+        background-color: #ef553b;
+    }
+    .prediction-date-color {
+        background-color: #6e44ff;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -277,98 +291,172 @@ if 'last_update_time' not in st.session_state:
 if 'prediction_date_str' not in st.session_state:
     st.session_state.prediction_date_str = None
 
-# Function to create TradingView widget
-def create_tradingview_widget(ticker, interval="D", prediction_data=None):
-    # Map yfinance tickers to TradingView format
-    ticker_map = {
-        "NQ=F": "CME_MINI:NQ1!",
-        "ES=F": "CME_MINI:ES1!",
-        "YM=F": "CBOT_MINI:YM1!",
-        "RTY=F": "CME_MINI:RTY1!",
-        "GC=F": "COMEX:GC1!",
-        "CL=F": "NYMEX:CL1!",
-        "NG=F": "NYMEX:NG1!",
-        "EURUSD=X": "FX:EURUSD",
-        "GBPUSD=X": "FX:GBPUSD",
-        "DX-Y.NYB": "TVC:DXY"
-    }
-    
-    # Map intervals to TradingView format
-    interval_map = {
-        "Daily": "D",
-        "Weekly": "W"
-    }
-    
-    tv_ticker = ticker_map.get(ticker, ticker)
-    tv_interval = interval_map.get(interval, "D")
-    
-    # Use a simpler, more reliable TradingView Advanced Chart widget
-    custom_script = f"""
-    <!-- TradingView Widget BEGIN -->
-    <div class="tradingview-widget-container" style="height:1200px;width:100%;">
-      <div id="tradingview_chart" style="height:1200px;width:100%"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-      <script type="text/javascript">
-      new TradingView.widget(
-      {{
-        "width": "100%",
-        "height": 1200,
-        "symbol": "{tv_ticker}",
-        "interval": "{tv_interval}",
-        "timezone": "exchange",
-        "theme": "dark",
-        "style": "1",
-        "locale": "en",
-        "toolbar_bg": "#f1f3f6",
-        "enable_publishing": false,
-        "hide_side_toolbar": false,
-        "allow_symbol_change": true,
-        "studies": [
-          "RSI@tv-basicstudies",
-          "MAExp@tv-basicstudies",
-          "MACD@tv-basicstudies",
-          "BB@tv-basicstudies"
-        ],
-        "container_id": "tradingview_chart"
-      }});
-      </script>
-    </div>
-    <!-- TradingView Widget END -->
+# Function to create TradingView widget - replaced with Plotly chart
+def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
     """
+    Create an interactive Plotly candlestick chart with predictions.
+    """
+    # If no data is provided, use the session state data
+    if data is None and 'data' in st.session_state:
+        data = st.session_state.data
+        
+    if data is None or data.empty:
+        return "No data available for charting. Please load data first."
     
-    # If we have prediction data, add an info message above the chart
-    if prediction_data:
-        pred_date = prediction_data['date'].strftime('%Y-%m-%d')
+    # Create the figure
+    fig = go.Figure()
+    
+    # Add candlestick chart
+    fig.add_trace(
+        go.Candlestick(
+            x=data.index,
+            open=data['Open'],
+            high=data['High'],
+            low=data['Low'],
+            close=data['Close'],
+            name="Price",
+            increasing_line_color='#00cc96',
+            decreasing_line_color='#ef553b'
+        )
+    )
+    
+    # Add volume bars
+    fig.add_trace(
+        go.Bar(
+            x=data.index,
+            y=data['Volume'],
+            name="Volume",
+            opacity=0.3,
+            marker={
+                'color': 'rgba(110, 68, 255, 0.5)'
+            },
+            yaxis="y2"
+        )
+    )
+    
+    # Calculate and add moving averages
+    data['MA20'] = data['Close'].rolling(window=20).mean()
+    data['MA50'] = data['Close'].rolling(window=50).mean()
+    
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data['MA20'],
+            name="20-Day MA",
+            line=dict(color='rgba(255, 255, 255, 0.7)', width=1)
+        )
+    )
+    
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data['MA50'],
+            name="50-Day MA",
+            line=dict(color='rgba(255, 255, 0, 0.7)', width=1)
+        )
+    )
+    
+    # Add Bollinger Bands (20-day, 2 standard deviations)
+    data['MA20_std'] = data['Close'].rolling(window=20).std()
+    data['BB_upper'] = data['MA20'] + 2 * data['MA20_std']
+    data['BB_lower'] = data['MA20'] - 2 * data['MA20_std']
+    
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data['BB_upper'],
+            name="BB Upper",
+            line=dict(color='rgba(173, 216, 230, 0.7)', width=1),
+            showlegend=True
+        )
+    )
+    
+    fig.add_trace(
+        go.Scatter(
+            x=data.index,
+            y=data['BB_lower'],
+            name="BB Lower",
+            line=dict(color='rgba(173, 216, 230, 0.7)', width=1),
+            fill='tonexty',
+            fillcolor='rgba(173, 216, 230, 0.1)',
+            showlegend=True
+        )
+    )
+    
+    # Add prediction lines if available
+    if prediction_data is not None:
+        pred_date = prediction_data['date']
         high_price = float(prediction_data['high'])
         low_price = float(prediction_data['low'])
         
         # Format prediction values with appropriate decimal places
-        if 'USD=X' in ticker:
-            high_price_formatted = f"{high_price:.5f}"
-            low_price_formatted = f"{low_price:.5f}"
-        else:
-            high_price_formatted = f"{high_price:.2f}"
-            low_price_formatted = f"{low_price:.2f}"
+        is_forex = 'USD=X' in ticker
+        decimal_places = 5 if is_forex else 2
+        high_price_formatted = f"{high_price:.{decimal_places}f}"
+        low_price_formatted = f"{low_price:.{decimal_places}f}"
         
-        # Add prediction info above the chart
-        prediction_info = f"""
-        <div style="background-color: rgba(110, 68, 255, 0.1); padding: 10px; border-radius: 5px; 
-                    margin-bottom: 10px; border: 1px solid #6e44ff; text-align: center;">
-            <p style="font-size: 16px; margin-bottom: 5px;">
-                <strong>Prediction for {pred_date}:</strong>
-            </p>
-            <p style="font-size: 16px; margin-bottom: 5px;">
-                <span style="color: #00cc96; font-weight: bold;">Predicted High: {high_price_formatted}</span> | 
-                <span style="color: #ef553b; font-weight: bold;">Predicted Low: {low_price_formatted}</span>
-            </p>
-            <p style="font-size: 14px; opacity: 0.8;">
-                Look for these levels in the chart below (they're not drawn as lines)
-            </p>
-        </div>
-        """
-        custom_script = prediction_info + custom_script
+        # Create prediction date vertical line
+        fig.add_vline(
+            x=pred_date, 
+            line_dash="dash", 
+            line_color="#6e44ff",
+            annotation_text=f"Prediction: {pred_date.strftime('%Y-%m-%d')}",
+            annotation_position="top right"
+        )
+        
+        # Add horizontal line for predicted high
+        fig.add_hline(
+            y=high_price, 
+            line_dash="dash", 
+            line_width=2,
+            line_color="#00cc96",
+            annotation_text=f"Predicted High: {high_price_formatted}",
+            annotation_position="right"
+        )
+        
+        # Add horizontal line for predicted low
+        fig.add_hline(
+            y=low_price, 
+            line_dash="dash", 
+            line_width=2,
+            line_color="#ef553b",
+            annotation_text=f"Predicted Low: {low_price_formatted}",
+            annotation_position="right"
+        )
+        
+    # Update layout
+    fig.update_layout(
+        title=f"{ticker} Chart ({interval})",
+        xaxis_title="Date",
+        yaxis_title="Price",
+        template="plotly_dark",
+        plot_bgcolor='rgba(19, 23, 34, 0.0)',
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+        height=800,  # Reduced height from TradingView's 1200px
+        xaxis_rangeslider_visible=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        yaxis=dict(
+            domain=[0.2, 1.0]
+        ),
+        yaxis2=dict(
+            domain=[0, 0.15],
+            title="Volume"
+        ),
+        margin=dict(l=40, r=40, t=40, b=40)
+    )
     
-    return custom_script
+    # Improve candlestick appearance
+    fig.update_xaxes(
+        rangeslider_thickness=0.05
+    )
+    
+    return fig
 
 # Function to update data
 def update_live_data(ticker, interval):
@@ -844,17 +932,36 @@ if st.session_state.data_loaded:
             """, unsafe_allow_html=True)
         
         # TradingView Chart with predictions
-        st.markdown("### TradingView Chart with Predictions")
+        st.markdown("### Market Chart with Predictions")
         
-        # Create a TradingView chart with the predictions
-        tradingview_widget = create_tradingview_widget(
+        # Create legend for prediction lines
+        st.markdown("""
+        <div class="prediction-line-info">
+            <div class="prediction-line-item">
+                <div class="prediction-line-color prediction-high-color"></div>
+                <span>Predicted High</span>
+            </div>
+            <div class="prediction-line-item">
+                <div class="prediction-line-color prediction-low-color"></div>
+                <span>Predicted Low</span>
+            </div>
+            <div class="prediction-line-item">
+                <div class="prediction-line-color prediction-date-color"></div>
+                <span>Prediction Date</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Create a Plotly chart with the predictions instead of TradingView
+        st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+        market_chart = create_market_chart(
             st.session_state.selected_ticker, 
             st.session_state.selected_interval,
-            pred
+            pred,
+            st.session_state.data
         )
-        
-        # Display the TradingView chart
-        st.components.v1.html(tradingview_widget, height=1300)
+        st.plotly_chart(market_chart, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Simplified backtesting section
 st.markdown("---")
@@ -956,15 +1063,19 @@ if st.button("Open Backtesting"):
             
             st.plotly_chart(fig, use_container_width=True)
             
-            # Display TradingView chart
-            st.markdown("### TradingView Chart")
+            # Display Plotly chart instead of TradingView chart
+            st.markdown("### Market Chart")
             
-            # Display the TradingView chart
-            tradingview_widget = create_tradingview_widget(
-                backtest_ticker, 
-                backtest_interval
+            # Create a Plotly chart
+            st.markdown('<div class="chart-container">', unsafe_allow_html=True)
+            backtest_data = load_market_data(backtest_ticker, "1 Year", backtest_interval)
+            market_chart = create_market_chart(
+                backtest_ticker,
+                backtest_interval,
+                data=backtest_data
             )
-            st.components.v1.html(tradingview_widget, height=1300)
+            st.plotly_chart(market_chart, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
                 
         except Exception as e:
             backtest_status.error(f"Error in backtesting: {str(e)}")
