@@ -316,7 +316,12 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             close=data['Close'],
             name="Price",
             increasing_line_color='#00cc96',
-            decreasing_line_color='#ef553b'
+            decreasing_line_color='#ef553b',
+            increasing_fillcolor='rgba(0, 204, 150, 0.5)',  # Semi-transparent green fill
+            decreasing_fillcolor='rgba(239, 85, 59, 0.5)',  # Semi-transparent red fill
+            line=dict(width=1),  # Thinner lines for cleaner look
+            whiskerwidth=0.8,    # Slightly thinner whiskers
+            opacity=0.95         # Slight transparency for better overlay with indicators
         )
     )
     
@@ -475,18 +480,23 @@ def create_market_chart(ticker, interval="D", prediction_data=None, data=None):
             x=1
         ),
         yaxis=dict(
-            domain=[0.2, 1.0]
+            domain=[0.2, 1.0],
+            gridcolor='rgba(255, 255, 255, 0.1)'  # Subtle grid lines
         ),
         yaxis2=dict(
             domain=[0, 0.15],
-            title="Volume"
+            title="Volume",
+            gridcolor='rgba(255, 255, 255, 0.1)'  # Matching grid lines
         ),
         margin=dict(l=40, r=40, t=40, b=40)
     )
     
     # Improve candlestick appearance
     fig.update_xaxes(
-        rangeslider_thickness=0.05
+        rangeslider_thickness=0.05,
+        gridcolor='rgba(255, 255, 255, 0.1)',   # Subtle grid lines
+        showgrid=True,                          # Ensure grid is visible
+        rangeslider_bgcolor='rgba(19, 23, 34, 0.3)'  # Semi-transparent rangeslider
     )
     
     return fig
