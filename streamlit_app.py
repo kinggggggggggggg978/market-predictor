@@ -108,11 +108,11 @@ st.markdown("""
         margin-top: -0.5rem;
     }
     .tradingview-widget-container iframe {
-        height: 1000px !important;
+        height: 1500px !important;
         width: 100% !important;
     }
     .tradingview-widget-container {
-        height: 1000px !important;
+        height: 1500px !important;
         width: 100% !important;
     }
     .live-indicator {
